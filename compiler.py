@@ -37,7 +37,7 @@ lexer = lex.lex()
 data = '''
  3 + 4 * 10
    + -20 *2
- (5 ^ 2)
+ (5 ^ 2) + 2
  '''
 
 lexer.input(data)
