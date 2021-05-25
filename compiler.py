@@ -1,4 +1,5 @@
 import ply.lex as lex
+import ply.yacc as yacc
 
 # Code based on the PLY basic example documentation https://www.dabeaz.com/ply/ply.html#ply_nn0
 
@@ -84,7 +85,6 @@ def t_newline(t):
 
 t_ignore = ' \t'
 
-
 def t_error(t):
     print("Illegal character '%s'" % t.value[0])
     t.lexer.skip(1)
@@ -92,13 +92,59 @@ def t_error(t):
 
 lexer = lex.lex()
 
-data = '''
- do {
-    a = a + 5
- } while(a<50)
- '''
+precedence = (
+    ('left','PLUS','MINUS'),
+    ('left','TIMES','DIVIDE'),
+    )
 
-lexer.input(data)
+names = { }
 
-for tok in lexer:
-     print(tok)
+def p_statement_assign(t):
+    'statement : ID EQ expression'
+    names[t[1]] = t[3]
+
+def p_statement_expr(t):
+    'statement : expression'
+    print(t[1])
+
+def p_expression_binop(t):
+    '''expression : expression PLUS expression
+                  | expression MINUS expression
+                  | expression TIMES expression
+                  | expression DIVIDE expression'''
+    if t[2] == '+'  : t[0] = t[1] + t[3]
+    elif t[2] == '-': t[0] = t[1] - t[3]
+    elif t[2] == '*': t[0] = t[1] * t[3]
+    elif t[2] == '/': t[0] = t[1] / t[3]
+
+def p_expression_group(t):
+    'expression : LPAREN expression RPAREN'
+    t[0] = t[2]
+
+def p_expression_intv(t):
+    'expression : INTV'
+    t[0] = t[1]
+
+def p_expression_floatv(t):
+    'expression : FLOATV'
+    t[0] = t[1]
+
+def p_expression_id(t):
+    'expression : ID'
+    try:
+        t[0] = names[t[1]]
+    except LookupError:
+        print("Undefined id '%s'" % t[1])
+        t[0] = 0
+
+def p_error(t):
+    print("Syntax error at '%s'" % t.value)
+
+parser = yacc.yacc()
+
+while True:
+    try:
+        s = input('calc > ')   # Use raw_input on Python 2
+    except EOFError:
+        break
+    parser.parse(s)
