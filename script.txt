@@ -11,9 +11,17 @@ if(x == 10){
     for(int i = 0; i < 10; i = i + 2){
         print i;
     }
+} elif (x == 11) {
+    print "2";
+} else {
+    print "hello";
 }
+
+int x = 1;
+
 while(x < 10){
     print "hi";
+    x = x + 1;
 }
 do{
     print "what up";

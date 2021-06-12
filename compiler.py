@@ -92,6 +92,7 @@ precedence = (
 names = {}
 prog = {}
 
+
 def p_start(p):
     '''prog : statement'''
     global prog
@@ -105,10 +106,10 @@ def p_statement(p):
                  | declare ';' statement
                  | print ';' statement
                  | none'''
-    if len(p) > 2:  
+    if len(p) > 2:
         if p[2] == ';':
             p[2] = p[3]
-        p[0] = (p[1], ) + p[2]
+        p[0] = (p[1],) + p[2]
     else:
         p[0] = ()
 
@@ -131,8 +132,8 @@ def p_if(p):
 def p_elif(p):
     '''elif : ELIF '(' expression ')' '{' statement '}' elif
                  | none'''
-    if len(p) > 2:  
-        p[0] = (('elif', p[3], p[6]), ) + p[8]
+    if len(p) > 2:
+        p[0] = (('elif', p[3], p[6]),) + p[8]
     else:
         p[0] = ()
 
@@ -140,7 +141,7 @@ def p_elif(p):
 def p_else(p):
     '''else : ELSE '{' statement '}'
             | none'''
-    if len(p) > 2:  
+    if len(p) > 2:
         p[0] = ('else', p[3])
 
 
@@ -244,8 +245,6 @@ def p_expression_ID(p):
     p[0] = p[1]
 
 
-
-
 def p_error(t):
     if t:
         print("Syntax error at '%s'" % t.value)
@@ -260,3 +259,304 @@ yacc.parse(s)
 
 print('==== Tree ====')
 print(prog)
+
+code = []
+
+def declare_assign(val):
+    res = "" + val[2] + " "
+    if val[1] == 'int' or val[1] == 'float':
+        if type(val[3]) is not tuple:
+            res = res + str(float(val[3]))
+        else:
+            res = res + operation(val[3])
+    else:
+        res = res + str(val[3])
+
+    code.append(res)
+
+
+def declare(val):
+    res = "" + val[1] + " " + val[2]
+    code.append(res)
+
+
+def operation(val):
+    res = ""
+
+    if val[2] == '>' or val[2] == '>=' or val[2] == '<' or val[2] == '>=' or val[2] == 'and' or val[2] == 'or' or val[2] == '==':
+        if type(val[1]) is not tuple:
+            res = res + str(val[1])
+        else:
+            res = res + str(operation(val[1]))
+
+        res = res + ' ' + val[2] + ' '
+
+        if type(val[3]) is not tuple:
+            res = res + str(val[3])
+        else:
+            res = res + str(operation(val[3]))
+
+        code.append(res)
+
+    else:
+        numericRes = 0
+        if type(val[1]) is not tuple:
+            if type(val[1]) is int or float:
+                numericRes = val[1]
+
+            res = res + str(val[1])
+        else:
+            numericRes = operation(val[1])
+            res = res + str(numericRes)
+
+        if val[2] == '+':
+            res = res + ' + '
+        elif val[2] == '-':
+            res = res + ' - '
+        elif val[2] == '*':
+            res = res + ' * '
+        elif val[2] == '/':
+            res = res + ' / '
+        elif val[2] == '^':
+            res = res + ' ^ '
+
+        if type(val[3]) is not tuple:
+            if val[2] == '+' and type(val[3]) is not str:
+                if type(numericRes) is not str:
+                    numericRes = numericRes + val[3]
+                else:
+                    numericRes = val[3]
+            elif val[2] == '-' and type(val[3]) is not str:
+                if type(numericRes) is not str:
+                    numericRes = numericRes - val[3]
+                else:
+                    numericRes = val[3]
+            elif val[2] == '*' and type(val[3]) is not str:
+                if type(numericRes) is not str:
+                    numericRes = numericRes * val[3]
+                else:
+                    numericRes = val[3]
+            elif val[2] == '/' and type(val[3]) is not str:
+                if type(numericRes) is not str:
+                    numericRes = numericRes / val[3]
+                else:
+                    numericRes = val[3]
+            elif val[2] == '^' and type(val[3]) is not str:
+                if type(numericRes) is not str:
+                    numericRes = numericRes ** val[3]
+                else:
+                    numericRes = val[3]
+
+            res = res + str(val[3])
+
+        elif type(val[3]) is str:
+            res = res + val[3]
+            code.append(res)
+            return res
+
+        else:
+            opRes = 0
+
+            if val[2] == '+':
+                op = operation(val[3])
+                numericRes = numericRes + op
+                opRes = op
+            elif val[2] == '-':
+                op = operation(val[3])
+                numericRes = numericRes - op
+                opRes = op
+            elif val[2] == '*':
+                op = operation(val[3])
+                numericRes = numericRes * op
+                opRes = op
+            elif val[2] == '/':
+                op = operation(val[3])
+                numericRes = numericRes / op
+                opRes = op
+            elif val[2] == '^':
+                op = operation(val[3])
+                numericRes = numericRes ** op
+                opRes = op
+
+            res = res + str(opRes)
+
+        code.append(res)
+        return numericRes
+
+
+def assign(val):
+    res = "" + val[1] + " "
+
+    if type(val[2]) is not tuple:
+        res = res + str(val[2])
+    else:
+        res = res + str(operation(val[2]))
+
+    code.append(res)
+
+def printC(val):
+
+    res = val[0] + ' ' + val[1]
+    code.append(res)
+
+def fori(val):
+    code.append('for')
+    declare_assign(val[1])
+    operation(val[2])
+    assign(val[3])
+    for stm in val[4]:
+        if stm[0] == 'declareAssign':
+            declare_assign(stm)
+        elif stm[0] == 'declare':
+            declare(stm)
+        elif stm[0] == 'assign':
+            assign(stm)
+        elif stm[0] == 'print':
+            printC(stm)
+        elif stm[0] == 'if':
+            ifcond(stm[1])
+        elif stm[0] == 'while':
+            whilei(stm)
+        elif stm[0] == 'do-while':
+            dowhilei(stm)
+    code.append('end for')
+
+def ifcond(val):
+    code.append('if')
+    operation(val[1][1])
+    for stm in val[1][2]:
+        if stm[0] == 'declareAssign':
+            declare_assign(stm)
+        elif stm[0] == 'declare':
+            declare(stm)
+        elif stm[0] == 'assign':
+            assign(stm)
+        elif stm[0] == 'for':
+            fori(stm)
+        elif stm[0] == 'print':
+            printC(stm)
+        elif stm[0] == 'if':
+            ifcond(stm[1])
+        elif stm[0] == 'while':
+            whilei(stm)
+        elif stm[0] == 'do-while':
+            dowhilei(stm)
+    code.append('end if')
+    index = 2
+    while index < len(val):
+        if len(val[index]) > 0:
+            if val[index][0][0] == 'elif':
+                code.append('elif')
+                operation(val[index][0][1])
+                for stm in val[index][0][2]:
+                    if stm[0] == 'declareAssign':
+                        declare_assign(stm)
+                    elif stm[0] == 'declare':
+                        declare(stm)
+                    elif stm[0] == 'assign':
+                        assign(stm)
+                    elif stm[0] == 'for':
+                        fori(stm)
+                    elif stm[0] == 'print':
+                        printC(stm)
+                    elif stm[0] == 'if':
+                        ifcond(stm[1])
+                    elif stm[0] == 'while':
+                        whilei(stm)
+                    elif stm[0] == 'do-while':
+                        dowhilei(stm)
+                code.append('end elif')
+            else:
+                code.append('else')
+                for stm in val[index][1]:
+                    if stm[0] == 'declareAssign':
+                        declare_assign(stm)
+                    elif stm[0] == 'declare':
+                        declare(stm)
+                    elif stm[0] == 'assign':
+                        assign(stm)
+                    elif stm[0] == 'for':
+                        fori(stm)
+                    elif stm[0] == 'print':
+                        printC(stm)
+                    elif stm[0] == 'if':
+                        ifcond(stm[1])
+                    elif stm[0] == 'while':
+                        whilei(stm)
+                    elif stm[0] == 'do-while':
+                        dowhilei(stm)
+                code.append('end else')
+
+        index = index + 1
+
+def whilei(val):
+    code.append('while')
+    operation(val[1])
+    for stm in val[2]:
+        if stm[0] == 'declareAssign':
+            declare_assign(stm)
+        elif stm[0] == 'declare':
+            declare(stm)
+        elif stm[0] == 'assign':
+            assign(stm)
+        elif stm[0] == 'for':
+            fori(stm)
+        elif stm[0] == 'print':
+            printC(stm)
+        elif stm[0] == 'conditional':
+            ifcond(stm)
+        elif stm[0] == 'while':
+            whilei(stm)
+        elif stm[0] == 'do-while':
+            dowhilei(stm)
+    code.append('end while')
+
+def dowhilei(val):
+    code.append('do')
+    for stm in val[2]:
+        if stm[0] == 'declareAssign':
+            declare_assign(stm)
+        elif stm[0] == 'declare':
+            declare(stm)
+        elif stm[0] == 'assign':
+            assign(stm)
+        elif stm[0] == 'for':
+            fori(stm)
+        elif stm[0] == 'print':
+            printC(stm)
+        elif stm[0] == 'conditional':
+            ifcond(stm)
+        elif stm[0] == 'while':
+            whilei(stm)
+        elif stm[0] == 'do-while':
+            dowhilei(stm)
+    code.append('while')
+    operation(val[1])
+    code.append('end while')
+
+for val in prog:
+    print(val)
+    if val[0] == 'declareAssign':
+        declare_assign(val)
+    elif val[0] == 'declare':
+        declare(val)
+    elif val[0] == 'assign':
+        assign(val)
+    elif val[0] == 'for':
+        fori(val)
+    elif val[0] == 'print':
+        printC(val)
+    elif val[0] == 'conditional':
+        ifcond(val)
+    elif val[0] == 'while':
+        whilei(val)
+    elif val[0] == 'do-while':
+        dowhilei(val)
+
+print("===============================================")
+
+file = open('output.txt', 'a')
+for val in code:
+    print(val)
+    file.write(val + '\n')
+file.close()
