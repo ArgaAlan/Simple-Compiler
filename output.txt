@@ -1,0 +1,41 @@
+i 10.0
+int j
+4 ^ 10
+1048576 + 2
+j 1048578
+10 ^ 2
+4 + 100
+j 104
+f 4.8
+b True
+f 4.0
+str hi there
+if
+x == 10
+for
+i 0.0
+i < 10
+i + 2
+i 2
+print i
+end for
+end if
+elif
+x == 11
+print 2
+end elif
+else
+print hello
+end else
+x 1.0
+while
+x < 10
+print hi
+x + 1
+x 1
+end while
+do
+print what up
+while
+x >= 5
+end while
